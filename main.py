@@ -1,5 +1,6 @@
 import os
 import discord
+import imageio_ffmpeg
 from discord.ext import commands
 from discord import app_commands
 import yt_dlp 
@@ -10,6 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 SONG_QUEUES = {}
+FFMPEG_EXECUTABLE = imageio_ffmpeg.get_ffmpeg_exe()
 
 async def search_ytdlp_async(query, ydl_opts):
     loop = asyncio.get_running_loop()
@@ -18,6 +20,33 @@ async def search_ytdlp_async(query, ydl_opts):
 def _extract(query, ydl_opts):
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         return ydl.extract_info(query, download=False)
+
+
+async def connect_to_user_voice(interaction: discord.Interaction):
+    """Connect to the command user's voice channel and report failures in Discord."""
+    voice_state = getattr(interaction.user, "voice", None)
+    voice_channel = voice_state.channel if voice_state else None
+
+    if voice_channel is None:
+        await interaction.followup.send("You must be in a voice channel.")
+        return None
+
+    voice_client = interaction.guild.voice_client
+
+    try:
+        if voice_client is None:
+            voice_client = await voice_channel.connect()
+        elif voice_channel != voice_client.channel:
+            await voice_client.move_to(voice_channel)
+    except (RuntimeError, discord.ClientException, asyncio.TimeoutError) as error:
+        print(f"Could not connect to voice channel: {error}")
+        await interaction.followup.send(
+            "I couldn't connect to your voice channel. Check my Connect/Speak "
+            "permissions and make sure the bot's voice dependencies are installed."
+        )
+        return None
+
+    return voice_client
 
 
 # Setup of intents
@@ -138,19 +167,10 @@ async def stop(interaction: discord.Interaction):
 @app_commands.describe(songs="List of songs separated by commas (e.g., 'song1, song2, song3')")
 async def playlist(interaction: discord.Interaction, songs: str):
     await interaction.response.defer()
-    
-    voice_channel = interaction.user.voice.channel
-    
-    if voice_channel is None:
-        await interaction.followup.send("You must be in a voice channel.")
-        return
-    
-    voice_client = interaction.guild.voice_client
-    
+
+    voice_client = await connect_to_user_voice(interaction)
     if voice_client is None:
-        voice_client = await voice_channel.connect()
-    elif voice_channel != voice_client.channel:
-        await voice_client.move_to(voice_channel)
+        return
     
     # Split songs by comma and clean up whitespace
     song_list = [song.strip() for song in songs.split(',') if song.strip()]
@@ -217,18 +237,9 @@ async def playlist(interaction: discord.Interaction, songs: str):
 async def play(interaction: discord.Interaction, song_query: str):
     await interaction.response.defer()
 
-    voice_channel = interaction.user.voice.channel
-
-    if voice_channel is None:
-        await interaction.followup.send("You must be in a voice channel.")
-        return
-
-    voice_client = interaction.guild.voice_client
-
+    voice_client = await connect_to_user_voice(interaction)
     if voice_client is None:
-        voice_client = await voice_channel.connect()
-    elif voice_channel != voice_client.channel:
-        await voice_client.move_to(voice_channel)
+        return
 
     ydl_options = {
         "format": "bestaudio[abr<=96]/bestaudio",
@@ -241,7 +252,7 @@ async def play(interaction: discord.Interaction, song_query: str):
     results = await search_ytdlp_async(query, ydl_options)
     tracks = results.get("entries", [])
 
-    if tracks is None:
+    if not tracks:
         await interaction.followup.send("No results found.")
         return
 
@@ -271,7 +282,11 @@ async def play_next_song(voice_client, guild_id, channel):
             "options": "-vn -c:a libopus -b:a 96k",
         }
 
-        source = discord.FFmpegOpusAudio(audio_url, **ffmpeg_options)
+        source = discord.FFmpegOpusAudio(
+            audio_url,
+            executable=FFMPEG_EXECUTABLE,
+            **ffmpeg_options,
+        )
 
         def after_play(error):
             if error:

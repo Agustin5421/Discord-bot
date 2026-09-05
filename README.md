@@ -38,7 +38,6 @@ A feature-rich Discord music bot built with Python that can play music from YouT
 
 ### Prerequisites
 - Python 3.8+
-- FFmpeg installed on your system
 - Discord Developer Application with bot token
 
 ### Installation
@@ -60,9 +59,10 @@ A feature-rich Discord music bot built with Python that can play music from YouT
    pip install -r requirements.txt
    ```
 
-4. **Install FFmpeg**
+   The dependencies include Discord's voice encryption support and a
+   project-local FFmpeg executable for audio playback.
 
-5. **Set up Discord Bot**
+4. **Set up Discord Bot**
    - Create a Discord application at [Discord Developer Portal](https://discord.com/developers/applications)
    - Create a bot and copy the token
    - Invite the bot to your server with these scopes:
@@ -74,14 +74,14 @@ A feature-rich Discord music bot built with Python that can play music from YouT
      - Speak
      - Use Slash Commands
 
-6. **Configure environment variables**
+5. **Configure environment variables**
    - Create a `.env` file in the project root
    - Add your Discord bot token:
    ```
    DISCORD_TOKEN=your_bot_token_here
    ```
 
-7. **Run the bot**
+6. **Run the bot**
    ```bash
    python main.py
    ```
