@@ -1,4 +1,4 @@
 discord.py[voice]
 imageio-ffmpeg
-yt-dlp
+yt-dlp[default]
 python-dotenv

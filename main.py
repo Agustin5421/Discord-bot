@@ -1,4 +1,5 @@
 import os
+import shutil
 import discord
 import imageio_ffmpeg
 from discord.ext import commands
@@ -11,7 +12,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 SONG_QUEUES = {}
-FFMPEG_EXECUTABLE = imageio_ffmpeg.get_ffmpeg_exe()
+FFMPEG_EXECUTABLE = (
+    os.getenv("FFMPEG_EXECUTABLE")
+    or shutil.which("ffmpeg")
+    or imageio_ffmpeg.get_ffmpeg_exe()
+)
 
 async def search_ytdlp_async(query, ydl_opts):
     loop = asyncio.get_running_loop()

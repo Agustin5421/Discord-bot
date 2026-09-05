@@ -38,6 +38,8 @@ A feature-rich Discord music bot built with Python that can play music from YouT
 
 ### Prerequisites
 - Python 3.8+
+- On Linux, system FFmpeg is recommended (`sudo apt install ffmpeg` on Ubuntu/Debian)
+- Deno 2.3+ is recommended for full YouTube support
 - Discord Developer Application with bot token
 
 ### Installation
@@ -59,8 +61,9 @@ A feature-rich Discord music bot built with Python that can play music from YouT
    pip install -r requirements.txt
    ```
 
-   The dependencies include Discord's voice encryption support and a
-   project-local FFmpeg executable for audio playback.
+   The dependencies include Discord's voice encryption support, yt-dlp's
+   JavaScript challenge scripts, and a fallback FFmpeg executable. The bot
+   prefers a system FFmpeg installation when one is available.
 
 4. **Set up Discord Bot**
    - Create a Discord application at [Discord Developer Portal](https://discord.com/developers/applications)
